@@ -31,6 +31,10 @@ const TaskSchema = new mongoose.Schema(
       enum: ["pending", "completed", "missed"],
       default: "pending",
     },
+    completedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -42,4 +46,9 @@ const TaskSchema = new mongoose.Schema(
 TaskSchema.index({ userId: 1, date: 1 });
 TaskSchema.index({ userId: 1, routineId: 1, date: 1 });
 
-export default mongoose.models.Task || mongoose.model("Task", TaskSchema);
+// In Next.js dev mode, the model might be cached. Delete it to ensure schema updates take effect.
+if (mongoose.models.Task) {
+  delete mongoose.models.Task;
+}
+
+export default mongoose.model("Task", TaskSchema);

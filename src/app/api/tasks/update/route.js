@@ -30,7 +30,10 @@ export async function PUT(request) {
 
     const task = await Task.findOneAndUpdate(
       { _id: taskId, userId },
-      { status },
+      { 
+        status,
+        completedAt: status === "completed" ? new Date() : null 
+      },
       { new: true }
     );
 

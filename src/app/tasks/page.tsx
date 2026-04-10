@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useHasMounted } from "@/hooks/useHasMounted";
 import Navbar from "@/components/Navbar";
 import TaskList from "@/components/TaskList";
 import toast from "react-hot-toast";
@@ -14,6 +15,7 @@ interface Task {
   date: string;
   status: "pending" | "completed" | "missed";
   createdAt?: string;
+  completedAt?: string;
 }
 
 interface Routine {
@@ -35,6 +37,7 @@ export default function Tasks() {
   
   // Calendar State
   const [currentViewDate, setCurrentViewDate] = useState(new Date());
+  const hasMounted = useHasMounted();
   
   // Use LOCAL date — browser is in IST (UTC+5:30), so local date = IST date.
   // Never use getUTC* here: between 12:00 AM and 5:30 AM IST the UTC date is still "yesterday".
@@ -329,9 +332,10 @@ export default function Tasks() {
   }
 
   const selectedTasks = groupedTasks[selectedDateStr] || [];
+  const displayTodayStr = hasMounted ? getTodayStr() : "";
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" suppressHydrationWarning>
       <Navbar />
       <main className="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
 
@@ -339,7 +343,7 @@ export default function Tasks() {
         <div className="flex flex-col lg:flex-row gap-6">
 
           {/* LEFT: Calendar */}
-          <div className="flex-1 min-w-0 lg:sticky lg:top-20 self-start">
+          <div className="flex-1 w-full min-w-0 lg:sticky lg:top-20 lg:self-start">
             {loading ? (
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 animate-pulse">
                 <div className="flex justify-between items-center mb-6">
@@ -358,7 +362,7 @@ export default function Tasks() {
                 </div>
               </div>
             ) : (
-              <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/60">
+              <div className="w-full bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/60 transition-all">
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
                   <h2 className="text-xl sm:text-2xl font-black text-gray-900 flex items-center">
                     <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center mr-3">

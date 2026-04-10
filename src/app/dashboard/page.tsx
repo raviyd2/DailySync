@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useHasMounted } from "@/hooks/useHasMounted";
 import Navbar from "@/components/Navbar";
 import StatsCard from "@/components/StatsCard";
 import TaskList from "@/components/TaskList";
@@ -15,12 +16,14 @@ interface Task {
   date: string;
   status: "pending" | "completed" | "missed";
   createdAt?: string;
+  completedAt?: string;
 }
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const hasMounted = useHasMounted();
 
   const fetchTasks = async () => {
     try {
@@ -97,8 +100,10 @@ export default function Dashboard() {
   const completedTasks = tasks.filter((t) => t.status === "completed").length;
   const missedTasks = tasks.filter((t) => t.status === "missed").length;
 
+  if (!hasMounted) return null;
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" suppressHydrationWarning>
       <Navbar />
       <main className="max-w-7xl mx-auto py-4 sm:py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-2 sm:py-6 sm:px-0">

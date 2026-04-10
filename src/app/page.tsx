@@ -3,7 +3,7 @@ import { ArrowRight, Calendar, BarChart3, CheckSquare, Zap, Clock } from "lucide
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-slate-50 relative overflow-hidden font-sans selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-slate-50 relative overflow-hidden font-sans selection:bg-indigo-500/30" suppressHydrationWarning>
       {/* Premium Background Mesh Gradient Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-400/25 blur-[120px] pointer-events-none animate-pulse duration-[10s]" />
       <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-violet-400/25 blur-[120px] pointer-events-none animate-pulse duration-[8s]" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { useHasMounted } from "@/hooks/useHasMounted";
 import Navbar from "@/components/Navbar";
 import { PieChart, TrendingUp, TrendingDown, Target, Flame, Calendar } from "lucide-react";
 import toast from "react-hot-toast";
@@ -11,6 +12,7 @@ interface Task {
   date: string;
   status: "pending" | "completed" | "missed";
   createdAt?: string;
+  completedAt?: string;
 }
 
 type FilterPeriod = "week" | "month" | "all";
@@ -40,6 +42,7 @@ export default function Analytics() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<FilterPeriod>("week");
+  const hasMounted = useHasMounted();
 
   // Fetch all historical tasks
   useEffect(() => {
@@ -157,8 +160,10 @@ export default function Analytics() {
     { key: "all",   label: "All Time"   },
   ];
 
+  if (!hasMounted) return null;
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" suppressHydrationWarning>
       <Navbar />
       <main className="max-w-7xl mx-auto py-4 sm:py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-2 sm:py-6 sm:px-0">

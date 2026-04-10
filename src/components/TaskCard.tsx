@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useHasMounted } from "@/hooks/useHasMounted";
 import { CheckCircle2, XCircle, Trash2, Clock, Circle, Eye, X } from "lucide-react";
 
 interface Task {
@@ -10,6 +11,7 @@ interface Task {
   date: string;
   status: "pending" | "completed" | "missed";
   createdAt?: string;
+  completedAt?: string;
 }
 
 interface TaskProps {
@@ -22,10 +24,12 @@ interface TaskProps {
 
 export default function TaskCard({ task, onUpdateStatus, onDelete, isPast, isFuture }: TaskProps) {
   const [showDetail, setShowDetail] = useState(false);
+  const hasMounted = useHasMounted();
 
   const isCompleted = task.status === "completed";
   const isMissed = task.status === "missed";
   const isPending = task.status === "pending";
+
 
   const getStatusClasses = () => {
     if (isCompleted) return "bg-green-50 border-green-200";
@@ -36,14 +40,24 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isPast, isFut
 
   // format date from UTC-midnight storage (IST safe)
   const d = new Date(task.date);
-  const dateLabel = d.toLocaleDateString("en-IN", {
+  const dateLabel = hasMounted ? d.toLocaleDateString("en-IN", {
     weekday: "short",
     month: "short",
     day: "numeric",
     timeZone: "Asia/Kolkata",
-  });
+  }) : "";
  
-  const createdLabel = task.createdAt ? new Date(task.createdAt).toLocaleString("en-IN", {
+  const createdLabel = (hasMounted && task.createdAt) ? new Date(task.createdAt).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata",
+  }) : null;
+
+  const completedLabel = (hasMounted && task.completedAt) ? new Date(task.completedAt).toLocaleString("en-IN", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -157,7 +171,10 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isPast, isFut
                 <div className="flex flex-col gap-0.5 mt-1">
                   <p className="text-sm text-gray-500 font-medium">Scheduled: {dateLabel}</p>
                   {createdLabel && (
-                    <p className="text-[11px] text-gray-400">Created: {createdLabel}</p>
+                    <p className="text-[10px] text-gray-400">Created: {createdLabel}</p>
+                  )}
+                  {completedLabel && (
+                    <p className="text-[10px] text-green-600 font-semibold">Completed: {completedLabel}</p>
                   )}
                 </div>
               </div>
