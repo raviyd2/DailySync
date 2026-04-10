@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
 // Paths that don't require authentication
-const publicPaths = ["/login", "/signup"];
+const publicPaths = ["/", "/login", "/signup"];
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
@@ -32,14 +32,6 @@ export async function middleware(request) {
       user = payload;
     } catch (error) {
       console.error("Middleware JWT verification failed");
-    }
-  }
-
-  if (pathname === "/") {
-    if (user) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    } else {
-      return NextResponse.redirect(new URL("/login", request.url));
     }
   }
 
