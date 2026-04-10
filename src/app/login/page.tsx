@@ -40,7 +40,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 relative overflow-hidden font-sans flex flex-col justify-center py-12 sm:px-6 lg:px-8 selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-slate-50 relative overflow-hidden font-sans flex flex-col justify-center py-6 sm:py-12 sm:px-6 lg:px-8 selection:bg-indigo-500/30">
       {/* Premium Background Mesh Gradient Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-400/20 blur-[120px] pointer-events-none" />
       <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-violet-400/20 blur-[120px] pointer-events-none" />
@@ -63,8 +63,8 @@ export default function Login() {
         </p>
       </div>
 
-      <div className="relative z-10 mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white/70 backdrop-blur-xl py-8 px-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-200/60 sm:rounded-3xl sm:px-10">
+      <div className="relative z-10 mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
+        <div className="bg-white/90 backdrop-blur-2xl py-8 px-6 shadow-2xl border border-gray-200/60 rounded-3xl sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email Address</label>

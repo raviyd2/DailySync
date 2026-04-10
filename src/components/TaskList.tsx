@@ -7,6 +7,7 @@ interface Task {
   description?: string;
   date: string;
   status: "pending" | "completed" | "missed";
+  createdAt?: string;
 }
 
 interface TaskListProps {

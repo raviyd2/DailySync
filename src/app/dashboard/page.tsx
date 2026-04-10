@@ -6,6 +6,7 @@ import StatsCard from "@/components/StatsCard";
 import TaskList from "@/components/TaskList";
 import { ListTodo, CheckCircle2, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 interface Task {
   _id: string;
@@ -13,11 +14,13 @@ interface Task {
   description?: string;
   date: string;
   status: "pending" | "completed" | "missed";
+  createdAt?: string;
 }
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
 
   const fetchTasks = async () => {
     try {
@@ -53,9 +56,10 @@ export default function Dashboard() {
     }
   };
 
-  const handleDelete = async (taskId: string) => {
+  const handleDelete = async () => {
+    if (!taskToDelete) return;
     try {
-      const res = await fetch(`/api/tasks/delete?taskId=${taskId}`, {
+      const res = await fetch(`/api/tasks/delete?taskId=${taskToDelete}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -64,6 +68,8 @@ export default function Dashboard() {
       }
     } catch (error) {
       toast.error("Failed to delete task");
+    } finally {
+      setTaskToDelete(null);
     }
   };
 
@@ -94,15 +100,15 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
+      <main className="max-w-7xl mx-auto py-4 sm:py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-2 sm:py-6 sm:px-0">
+          <h1 className="text-xl sm:text-2xl font-black text-gray-900 mb-4 sm:mb-6">Dashboard</h1>
           
           {loading ? (
             <div className="text-center py-10">Loading...</div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-5 sm:mb-8">
                 <StatsCard 
                   title="Total Tasks" 
                   value={totalTasks} 
@@ -120,7 +126,7 @@ export default function Dashboard() {
                 />
               </div>
 
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-lg font-medium text-gray-900">Today's Tasks</h2>
@@ -139,7 +145,7 @@ export default function Dashboard() {
                 <TaskList 
                   tasks={todaysTasks} 
                   onUpdateStatus={handleUpdateStatus} 
-                  onDelete={handleDelete} 
+                  onDelete={(id) => setTaskToDelete(id)} 
                   todayStr={todayStr_dash}
                 />
               </div>
@@ -147,6 +153,16 @@ export default function Dashboard() {
           )}
         </div>
       </main>
+
+      <ConfirmationModal
+        isOpen={!!taskToDelete}
+        onClose={() => setTaskToDelete(null)}
+        onConfirm={handleDelete}
+        title="Delete Task"
+        message="Are you sure you want to delete this task from your dashboard? This action cannot be undone."
+        confirmText="Delete"
+        type="danger"
+      />
     </div>
   );
 }

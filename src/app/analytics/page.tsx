@@ -10,6 +10,7 @@ interface Task {
   title: string;
   date: string;
   status: "pending" | "completed" | "missed";
+  createdAt?: string;
 }
 
 type FilterPeriod = "week" | "month" | "all";
@@ -159,12 +160,12 @@ export default function Analytics() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
+      <main className="max-w-7xl mx-auto py-4 sm:py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-2 sm:py-6 sm:px-0">
 
           {/* Header row */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
+            <h1 className="text-xl sm:text-2xl font-black text-gray-900 flex items-center">
               <PieChart className="w-6 h-6 mr-2 text-indigo-600" /> Analytics
             </h1>
 
@@ -200,9 +201,9 @@ export default function Analytics() {
           ) : (
             <>
               {/* Top Stats Row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-5 sm:mb-6">
                 {/* Streak */}
-                <div className="bg-gradient-to-br from-orange-50 to-white border border-orange-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+                <div className="bg-gradient-to-br from-orange-50 to-white border border-orange-100 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col justify-between">
                   <div className="flex items-center gap-2 text-orange-500 mb-2">
                     <Flame className="w-5 h-5" />
                     <span className="text-sm font-semibold">Streak</span>
@@ -212,7 +213,7 @@ export default function Analytics() {
                 </div>
 
                 {/* Completion */}
-                <div className="bg-gradient-to-br from-green-50 to-white border border-green-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+                <div className="bg-gradient-to-br from-green-50 to-white border border-green-100 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col justify-between">
                   <div className="flex items-center gap-2 text-green-600 mb-2">
                     <TrendingUp className="w-5 h-5" />
                     <span className="text-sm font-semibold">Done</span>
@@ -222,7 +223,7 @@ export default function Analytics() {
                 </div>
 
                 {/* Missed */}
-                <div className="bg-gradient-to-br from-red-50 to-white border border-red-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+                <div className="bg-gradient-to-br from-red-50 to-white border border-red-100 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col justify-between">
                   <div className="flex items-center gap-2 text-red-500 mb-2">
                     <TrendingDown className="w-5 h-5" />
                     <span className="text-sm font-semibold">Missed</span>
@@ -232,7 +233,7 @@ export default function Analytics() {
                 </div>
 
                 {/* Pending */}
-                <div className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+                <div className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col justify-between">
                   <div className="flex items-center gap-2 text-indigo-500 mb-2">
                     <Calendar className="w-5 h-5" />
                     <span className="text-sm font-semibold">Pending</span>
@@ -243,7 +244,7 @@ export default function Analytics() {
               </div>
 
               {/* This Week Bar Chart */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm mb-6">
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-4 sm:p-6 shadow-sm mb-4 sm:mb-6">
                 <h2 className="text-base font-bold text-gray-900 mb-5 flex items-center gap-2">
                   <Target className="w-5 h-5 text-indigo-500" /> This Week's Activity
                 </h2>
@@ -296,7 +297,7 @@ export default function Analytics() {
               </div>
 
               {/* Distribution breakdown */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-4 sm:p-6 shadow-sm">
                 <h2 className="text-base font-bold text-gray-900 mb-5">Task Distribution</h2>
 
                 {totalTasks > 0 ? (

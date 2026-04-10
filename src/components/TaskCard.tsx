@@ -9,6 +9,7 @@ interface Task {
   description?: string;
   date: string;
   status: "pending" | "completed" | "missed";
+  createdAt?: string;
 }
 
 interface TaskProps {
@@ -41,6 +42,16 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isPast, isFut
     day: "numeric",
     timeZone: "Asia/Kolkata",
   });
+ 
+  const createdLabel = task.createdAt ? new Date(task.createdAt).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata",
+  }) : null;
 
   return (
     <>
@@ -64,7 +75,7 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isPast, isFut
           </button>
 
           <div className="flex flex-col min-w-0">
-            <h3 className={`text-sm sm:text-[15px] font-bold truncate ${isCompleted ? "text-gray-400 line-through" : isMissed ? "text-gray-500 line-through" : "text-gray-900"}`}>
+            <h3 className={`text-sm sm:text-[15px] font-bold break-all line-clamp-2 ${isCompleted ? "text-gray-400 line-through" : isMissed ? "text-gray-500 line-through" : "text-gray-900"}`}>
               {task.title}
             </h3>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -85,7 +96,7 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isPast, isFut
         </div>
 
         {/* Right: controls */}
-        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100"
+        <div className="flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity focus-within:opacity-100"
           style={{ opacity: (isCompleted || isMissed) ? 1 : undefined }}>
           
           {/* View detail */}
@@ -137,13 +148,18 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isPast, isFut
           onClick={() => setShowDetail(false)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100"
+            className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-5 sm:p-6 border border-gray-100"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start justify-between mb-3 sm:mb-4">
               <div className="flex-1">
-                <h2 className="text-xl font-bold text-gray-900 leading-tight">{task.title}</h2>
-                <p className="text-sm text-gray-500 mt-1">{dateLabel}</p>
+                <h2 className="text-xl font-bold text-gray-900 leading-tight break-all">{task.title}</h2>
+                <div className="flex flex-col gap-0.5 mt-1">
+                  <p className="text-sm text-gray-500 font-medium">Scheduled: {dateLabel}</p>
+                  {createdLabel && (
+                    <p className="text-[11px] text-gray-400">Created: {createdLabel}</p>
+                  )}
+                </div>
               </div>
               <button
                 onClick={() => setShowDetail(false)}
@@ -183,9 +199,9 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isPast, isFut
             </div>
 
             {/* Description */}
-            <div className="bg-gray-50 rounded-xl p-4 mb-5 min-h-[80px]">
+            <div className="bg-gray-50 rounded-2xl p-3 sm:p-4 mb-4 sm:mb-5 min-h-[60px] sm:min-h-[80px]">
               {task.description ? (
-                <p className="text-sm text-gray-700 leading-relaxed">{task.description}</p>
+                <p className="text-sm text-gray-700 leading-relaxed break-all whitespace-pre-wrap">{task.description}</p>
               ) : (
                 <p className="text-sm text-gray-400 italic">No description added.</p>
               )}

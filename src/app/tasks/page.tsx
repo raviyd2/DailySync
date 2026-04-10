@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import TaskList from "@/components/TaskList";
 import toast from "react-hot-toast";
-import { Trash2, Repeat, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
+import { Trash2, Repeat, ChevronLeft, ChevronRight, Calendar as CalendarIcon, AlertCircle } from "lucide-react";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 interface Task {
   _id: string;
@@ -12,6 +13,7 @@ interface Task {
   description?: string;
   date: string;
   status: "pending" | "completed" | "missed";
+  createdAt?: string;
 }
 
 interface Routine {
@@ -28,6 +30,8 @@ export default function Tasks() {
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [loading, setLoading] = useState(true);
   const [routineToDelete, setRoutineToDelete] = useState<string | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [showClearDayConfirm, setShowClearDayConfirm] = useState(false);
   
   // Calendar State
   const [currentViewDate, setCurrentViewDate] = useState(new Date());
@@ -184,9 +188,10 @@ export default function Tasks() {
     }
   };
 
-  const handleDeleteTask = async (taskId: string) => {
+  const handleDeleteTask = async () => {
+    if (!taskToDelete) return;
     try {
-      const res = await fetch(`/api/tasks/delete?taskId=${taskId}`, {
+      const res = await fetch(`/api/tasks/delete?taskId=${taskToDelete}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -195,6 +200,8 @@ export default function Tasks() {
       }
     } catch (error) {
       toast.error("Failed to delete task");
+    } finally {
+      setTaskToDelete(null);
     }
   };
 
@@ -218,7 +225,6 @@ export default function Tasks() {
   };
 
   const handleClearDay = async () => {
-    if (!window.confirm(`Are you sure you want to permanently delete ALL tasks scheduled for ${selectedDateStr}?`)) return;
     try {
       const res = await fetch(`/api/tasks/bulk-delete?date=${selectedDateStr}`, { method: "DELETE" });
       if (res.ok) {
@@ -227,6 +233,8 @@ export default function Tasks() {
       }
     } catch (error) {
       toast.error("Error clearing day");
+    } finally {
+      setShowClearDayConfirm(false);
     }
   };
 
@@ -272,7 +280,7 @@ export default function Tasks() {
   const calendarDays = [];
   // Empty blocks for offset
   for (let i = 0; i < firstDayOfMonth; i++) {
-    calendarDays.push(<div key={`empty-${i}`} className="h-20 border border-gray-100 bg-gray-50/50 rounded-lg"></div>);
+    calendarDays.push(<div key={`empty-${i}`} className="h-16 sm:h-20 border border-gray-100 bg-gray-50/50 rounded-xl"></div>);
   }
   // Actual Days
   for (let day = 1; day <= daysInMonth; day++) {
@@ -285,26 +293,36 @@ export default function Tasks() {
       <div 
         key={day} 
         onClick={() => setSelectedDateStr(dateStr)}
-        className={`h-20 p-2 border rounded-lg cursor-pointer transition-all duration-200 flex flex-col justify-between
-          ${isSelected ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500' : 'border-gray-200 bg-white hover:border-indigo-300'}
+        className={`h-16 sm:h-20 p-1.5 sm:p-2 border rounded-xl cursor-pointer transition-all duration-300 flex flex-col justify-between overflow-hidden
+          ${isSelected ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500/50 shadow-sm shadow-indigo-100' : 'border-gray-200 bg-white hover:border-indigo-300'}
         `}
       >
-        <span className={`text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full ${isToday ? 'bg-indigo-600 text-white' : 'text-gray-700'}`}>
-          {day}
-        </span>
+        <div className="flex justify-between items-start">
+          <span className={`text-[13px] sm:text-sm font-bold w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg transition-colors ${
+            isToday ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 
+            isSelected ? 'text-indigo-700' : 'text-gray-700'
+          }`}>
+            {day}
+          </span>
+          {isToday && !isSelected && <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full mt-1 mr-1" />}
+        </div>
         
-        {/* Render Task Dots */}
-        <div className="flex gap-1 flex-wrap mt-1">
-          {dayTasks.slice(0, 5).map((t, idx) => (
+        {/* Render Task Dots - Horizontal Only, No Wrap Overflow */}
+        <div className="flex gap-0.5 sm:gap-1 mt-auto pb-0.5 min-h-[8px]">
+          {dayTasks.slice(0, 3).map((t, idx) => (
              <div 
               key={idx} 
-              className={`w-2 h-2 rounded-full ${
+              className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0 ${
                 t.status === 'completed' ? 'bg-green-500' : 
                 t.status === 'missed' ? 'bg-red-500' : 'bg-indigo-400'
               }`}
              />
           ))}
-          {dayTasks.length > 5 && <span className="text-[10px] text-gray-400 font-bold">+{dayTasks.length - 5}</span>}
+          {dayTasks.length > 3 && (
+            <span className="text-[8px] sm:text-[10px] text-gray-400 font-black leading-none self-center">
+              +{dayTasks.length - 3}
+            </span>
+          )}
         </div>
       </div>
     );
@@ -321,7 +339,7 @@ export default function Tasks() {
         <div className="flex flex-col lg:flex-row gap-6">
 
           {/* LEFT: Calendar */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 lg:sticky lg:top-20 self-start">
             {loading ? (
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 animate-pulse">
                 <div className="flex justify-between items-center mb-6">
@@ -340,21 +358,26 @@ export default function Tasks() {
                 </div>
               </div>
             ) : (
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                    <CalendarIcon className="mr-3 w-6 h-6 text-indigo-600" />
+              <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200/60">
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+                  <h2 className="text-xl sm:text-2xl font-black text-gray-900 flex items-center">
+                    <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center mr-3">
+                      <CalendarIcon className="w-5 h-5 text-indigo-600" />
+                    </div>
                     {currentViewDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
                   </h2>
-                  <div className="flex gap-2">
-                    <button onClick={handlePrevMonth} className="p-2 border rounded-md hover:bg-gray-50 text-gray-600"><ChevronLeft className="w-5 h-5"/></button>
-                    <button onClick={() => setCurrentViewDate(new Date())} className="px-3 py-1 text-sm font-medium border rounded-md hover:bg-gray-50 text-gray-700">Today</button>
-                    <button onClick={handleNextMonth} className="p-2 border rounded-md hover:bg-gray-50 text-gray-600"><ChevronRight className="w-5 h-5"/></button>
+                  <div className="flex items-center gap-1.5 bg-gray-50 p-1 rounded-xl w-full sm:w-auto overflow-x-auto">
+                    <button onClick={handlePrevMonth} className="flex-1 sm:flex-none p-2 hover:bg-white hover:shadow-sm rounded-lg text-gray-600 transition-all"><ChevronLeft className="w-5 h-5 mx-auto"/></button>
+                    <button onClick={() => setCurrentViewDate(new Date())} className="flex-1 sm:flex-none px-4 py-1.5 text-xs font-bold uppercase tracking-wider bg-white shadow-sm border border-gray-100 rounded-lg text-gray-700 hover:bg-gray-50 transition-all">Today</button>
+                    <button onClick={handleNextMonth} className="flex-1 sm:flex-none p-2 hover:bg-white hover:shadow-sm rounded-lg text-gray-600 transition-all"><ChevronRight className="w-5 h-5 mx-auto"/></button>
                   </div>
                 </div>
-                <div className="grid grid-cols-7 gap-2 mb-2">
+                <div className="grid grid-cols-7 gap-1 sm:gap-2">
                   {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day => (
-                    <div key={day} className="text-center text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{day}</div>
+                    <div key={day} className="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+                      <span className="hidden sm:inline">{day}</span>
+                      <span className="sm:hidden">{day[0]}</span>
+                    </div>
                   ))}
                   {calendarDays}
                 </div>
@@ -389,16 +412,26 @@ export default function Tasks() {
               {/* Form body */}
               <form onSubmit={handleSubmit} className="p-5 space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Title</label>
-                  <input type="text" required value={formData.title}
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Title</label>
+                    <span className={`text-[10px] font-bold ${formData.title.length >= 60 ? 'text-red-500' : 'text-gray-400'}`}>
+                      {formData.title.length}/60
+                    </span>
+                  </div>
+                  <input type="text" required value={formData.title} maxLength={60}
                     onChange={(e) => setFormData({...formData, title: e.target.value})}
                     placeholder="e.g. Read Physics Chapter 3"
                     className="block w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Description <span className="normal-case font-normal text-gray-400">(optional)</span></label>
-                  <textarea value={formData.description}
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Description <span className="normal-case font-normal text-gray-400">(optional)</span></label>
+                    <span className={`text-[10px] font-bold ${formData.description.length >= 150 ? 'text-red-500' : 'text-gray-400'}`}>
+                      {formData.description.length}/150
+                    </span>
+                  </div>
+                  <textarea value={formData.description} maxLength={150}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
                     className="block w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
                     rows={2}
@@ -465,7 +498,7 @@ export default function Tasks() {
                   <p className="text-xs text-gray-400 mt-0.5">{selectedTasks.length} task{selectedTasks.length !== 1 ? 's' : ''}</p>
                 </div>
                 {selectedTasks.length > 0 && (
-                  <button onClick={handleClearDay}
+                  <button onClick={() => setShowClearDayConfirm(true)}
                     className="text-xs font-semibold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors"
                   >Clear Day</button>
                 )}
@@ -476,7 +509,7 @@ export default function Tasks() {
                   <p className="text-gray-300 text-xs mt-1">Use Quick Add above ↑</p>
                 </div>
               ) : (
-                <TaskList tasks={selectedTasks} onUpdateStatus={handleUpdateStatus} onDelete={handleDeleteTask} todayStr={todayStr} />
+                <TaskList tasks={selectedTasks} onUpdateStatus={handleUpdateStatus} onDelete={(id) => setTaskToDelete(id)} todayStr={todayStr} />
               )}
             </div>
           </div>
@@ -504,7 +537,7 @@ export default function Tasks() {
                     </div>
                   </div>
                   <button onClick={() => setRoutineToDelete(rt._id)}
-                    className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                     title="Delete Routine"
                   ><Trash2 className="w-4 h-4" /></button>
                 </div>
@@ -516,30 +549,54 @@ export default function Tasks() {
 
       {/* ── ROUTINE DELETE MODAL ── */}
       {routineToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Delete Routine</h2>
-            <p className="text-sm text-gray-600 mb-6">How aggressively do you want to delete this routine's footprint?</p>
-            <div className="space-y-3">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-gray-100 animate-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mb-6">
+              <AlertCircle className="w-8 h-8 text-red-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Delete Routine</h2>
+            <p className="text-gray-500 mb-8 leading-relaxed">How aggressively do you want to delete this routine's footprint? This action can be partially destructive.</p>
+            <div className="space-y-4">
               <button onClick={() => handleConfirmDeleteRoutine(false)}
-                className="w-full text-left p-4 rounded-xl border border-blue-100 bg-blue-50 hover:bg-blue-100 transition-colors"
+                className="w-full text-left p-5 rounded-2xl border border-blue-100 bg-blue-50/50 hover:bg-blue-50 transition-all group"
               >
-                <span className="block font-bold text-blue-900">Stop Safe (Recommended)</span>
-                <span className="block text-xs text-blue-700 mt-1">Stops creating future tasks, but keeps all past tasks alive so your Completion Charts are preserved.</span>
+                <span className="block font-bold text-blue-900 group-hover:text-indigo-600 transition-colors">Stop Safe (Recommended)</span>
+                <span className="block text-xs text-blue-700/70 mt-1">Stops creating future tasks, but keeps all past tasks alive so your Completion Charts are preserved.</span>
               </button>
               <button onClick={() => handleConfirmDeleteRoutine(true)}
-                className="w-full text-left p-4 rounded-xl border border-red-100 bg-red-50 hover:bg-red-100 transition-colors"
+                className="w-full text-left p-5 rounded-2xl border border-red-100 bg-red-50/50 hover:bg-red-50 transition-all group"
               >
-                <span className="block font-bold text-red-900">Total Nuke</span>
-                <span className="block text-xs text-red-700 mt-1">Aggressively strips ALL history (past and future) tied to this routine from your account permanently.</span>
+                <span className="block font-bold text-red-900 group-hover:text-red-600 transition-colors">Total Nuke</span>
+                <span className="block text-xs text-red-700/70 mt-1">Aggressively strips ALL history (past and future) tied to this routine from your account permanently.</span>
               </button>
             </div>
-            <div className="mt-6 flex justify-end">
-              <button onClick={() => setRoutineToDelete(null)} className="px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded-lg">Cancel</button>
+            <div className="mt-8 flex justify-end">
+              <button onClick={() => setRoutineToDelete(null)} className="px-6 py-3 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-2xl transition-colors">Cancel</button>
             </div>
           </div>
         </div>
       )}
+
+      {/* ── CUSTOM CONFIRMATION MODALS ── */}
+      <ConfirmationModal
+        isOpen={!!taskToDelete}
+        onClose={() => setTaskToDelete(null)}
+        onConfirm={handleDeleteTask}
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        confirmText="Delete"
+        type="danger"
+      />
+
+      <ConfirmationModal
+        isOpen={showClearDayConfirm}
+        onClose={() => setShowClearDayConfirm(false)}
+        onConfirm={handleClearDay}
+        title="Clear Entire Day"
+        message={`This will permanently delete ALL tasks scheduled for ${selectedDateStr}. Are you absolutely sure?`}
+        confirmText="Clear Day"
+        type="danger"
+      />
     </div>
   );
 }

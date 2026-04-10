@@ -10,8 +10,8 @@ interface StatsCardProps {
 
 export default function StatsCard({ title, value, icon, trend, trendUp }: StatsCardProps) {
   return (
-    <div className="bg-white overflow-hidden shadow rounded-lg border border-gray-100">
-      <div className="p-5">
+    <div className="bg-white overflow-hidden shadow-sm rounded-2xl border border-gray-100 transition-all">
+      <div className="p-4 sm:p-5">
         <div className="flex items-center">
           <div className="flex-shrink-0">
             <div className="rounded-md bg-indigo-50 p-3">
