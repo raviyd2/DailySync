@@ -110,26 +110,25 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isPast, isFut
         </div>
 
         {/* Right: controls */}
-        <div className="flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity focus-within:opacity-100"
-          style={{ opacity: (isCompleted || isMissed) ? 1 : undefined }}>
+        <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 transition-opacity">
           
           {/* View detail */}
           <button
             onClick={() => setShowDetail(true)}
-            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
             title="View Details"
           >
-            <Eye className="w-4 h-4" />
+            <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
           {/* Complete */}
           {task.status !== "completed" && (
             <button
               onClick={() => onUpdateStatus(task._id, "completed")}
-              className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
+              className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
               title="Mark Completed"
             >
-              <CheckCircle2 className="w-4 h-4" />
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           )}
 
@@ -137,20 +136,20 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isPast, isFut
           {task.status !== "missed" && (
             <button
               onClick={() => onUpdateStatus(task._id, "missed")}
-              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
               title="Mark Missed"
             >
-              <XCircle className="w-4 h-4" />
+              <XCircle className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           )}
 
           {/* Delete */}
           <button
             onClick={() => onDelete(task._id)}
-            className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors border-l ml-0.5 pl-1.5"
+            className="p-1.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all border-l border-gray-100 ml-1 pl-1.5 sm:pl-2"
             title="Delete Task"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
       </div>
