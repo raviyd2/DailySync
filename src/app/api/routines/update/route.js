@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
+import Routine from "@/models/Routine";
 import Task from "@/models/Task";
 import { getUserFromRequest } from "@/lib/getUser";
 
@@ -12,50 +13,51 @@ export async function PUT(request) {
 
     await connectDB();
     const body = await request.json();
-    const { taskId, status, title, description, date } = body;
+    const { routineId, title, description } = body;
 
-    if (!taskId) {
+    if (!routineId) {
       return NextResponse.json(
-        { error: "Please provide taskId" },
-        { status: 400 }
-      );
-    }
-
-    if (status && !["pending", "completed", "missed"].includes(status)) {
-      return NextResponse.json(
-        { error: "Invalid status value" },
+        { error: "Please provide routineId" },
         { status: 400 }
       );
     }
 
     const updateData = {};
-    if (status) {
-      updateData.status = status;
-      updateData.completedAt = status === "completed" ? new Date() : null;
-    }
     if (title) updateData.title = title;
     if (description !== undefined) updateData.description = description;
-    if (date) updateData.date = date;
 
-    const task = await Task.findOneAndUpdate(
-      { _id: taskId, userId },
+    const routine = await Routine.findOneAndUpdate(
+      { _id: routineId, userId },
       { $set: updateData },
       { new: true }
     );
 
-    if (!task) {
+    if (!routine) {
       return NextResponse.json(
-        { error: "Task not found" },
+        { error: "Routine not found" },
         { status: 404 }
       );
     }
 
+    // Cascade update: Change title/description for all tasks associated with this routine
+    // Usually we update all tasks to keep everything in sync
+    if (title || description !== undefined) {
+      const taskUpdateData = {};
+      if (title) taskUpdateData.title = title;
+      if (description !== undefined) taskUpdateData.description = description;
+
+      await Task.updateMany(
+        { routineId, userId },
+        { $set: taskUpdateData }
+      );
+    }
+
     return NextResponse.json(
-      { message: "Task updated successfully", task },
+      { message: "Routine and associated tasks updated successfully", routine },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Update task error:", error);
+    console.error("Update routine error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

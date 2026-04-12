@@ -15,10 +15,11 @@ interface TaskListProps {
   tasks: Task[];
   onUpdateStatus: (taskId: string, status: string) => void;
   onDelete: (taskId: string) => void;
+  onEdit?: (task: Task) => void;
   todayStr: string;
 }
 
-export default function TaskList({ tasks, onUpdateStatus, onDelete, todayStr }: TaskListProps) {
+export default function TaskList({ tasks, onUpdateStatus, onDelete, onEdit, todayStr }: TaskListProps) {
   if (!tasks || tasks.length === 0) {
     return (
       <div className="text-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
@@ -44,6 +45,7 @@ export default function TaskList({ tasks, onUpdateStatus, onDelete, todayStr }: 
             task={task}
             onUpdateStatus={onUpdateStatus}
             onDelete={onDelete}
+            onEdit={onEdit}
             isPast={taskDateStr < todayStr}
             isFuture={taskDateStr > todayStr}
           />

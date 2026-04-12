@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useHasMounted } from "@/hooks/useHasMounted";
-import { CheckCircle2, XCircle, Trash2, Clock, Circle, Eye, X } from "lucide-react";
+import { CheckCircle2, XCircle, Trash2, Clock, Circle, Eye, X, Pencil } from "lucide-react";
 
 interface Task {
   _id: string;
@@ -18,11 +18,12 @@ interface TaskProps {
   task: Task;
   onUpdateStatus: (taskId: string, status: string) => void;
   onDelete: (taskId: string) => void;
+  onEdit?: (task: Task) => void;
   isPast: boolean;
   isFuture: boolean;
 }
 
-export default function TaskCard({ task, onUpdateStatus, onDelete, isPast, isFuture }: TaskProps) {
+export default function TaskCard({ task, onUpdateStatus, onDelete, onEdit, isPast, isFuture }: TaskProps) {
   const [showDetail, setShowDetail] = useState(false);
   const hasMounted = useHasMounted();
 
@@ -177,12 +178,23 @@ export default function TaskCard({ task, onUpdateStatus, onDelete, isPast, isFut
                   )}
                 </div>
               </div>
-              <button
-                onClick={() => setShowDetail(false)}
-                className="p-1 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 ml-2"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {onEdit && (
+                  <button
+                    onClick={() => { onEdit(task); setShowDetail(false); }}
+                    className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                    title="Edit Task"
+                  >
+                    <Pencil className="w-5 h-5" />
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowDetail(false)}
+                  className="p-1 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* Status Badge */}

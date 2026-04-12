@@ -8,6 +8,7 @@ import TaskList from "@/components/TaskList";
 import { ListTodo, CheckCircle2, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import ConfirmationModal from "@/components/ConfirmationModal";
+import EditTaskModal from "@/components/EditTaskModal";
 
 interface Task {
   _id: string;
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const hasMounted = useHasMounted();
 
   const fetchTasks = async () => {
@@ -73,6 +75,25 @@ export default function Dashboard() {
       toast.error("Failed to delete task");
     } finally {
       setTaskToDelete(null);
+    }
+  };
+
+  const handleUpdateTaskDetail = async (taskId: string, updates: Partial<Task>) => {
+    try {
+      const res = await fetch("/api/tasks/update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId, ...updates }),
+      });
+      if (res.ok) {
+        toast.success("Task updated");
+        fetchTasks();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to update task");
+      }
+    } catch (error) {
+      toast.error("Failed to update task");
     }
   };
 
@@ -151,6 +172,7 @@ export default function Dashboard() {
                   tasks={todaysTasks} 
                   onUpdateStatus={handleUpdateStatus} 
                   onDelete={(id) => setTaskToDelete(id)} 
+                  onEdit={(task) => setTaskToEdit(task)}
                   todayStr={todayStr_dash}
                 />
               </div>
@@ -158,6 +180,13 @@ export default function Dashboard() {
           )}
         </div>
       </main>
+
+      <EditTaskModal 
+        isOpen={!!taskToEdit}
+        onClose={() => setTaskToEdit(null)}
+        onUpdate={handleUpdateTaskDetail}
+        task={taskToEdit}
+      />
 
       <ConfirmationModal
         isOpen={!!taskToDelete}

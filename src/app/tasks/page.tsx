@@ -5,8 +5,11 @@ import { useHasMounted } from "@/hooks/useHasMounted";
 import Navbar from "@/components/Navbar";
 import TaskList from "@/components/TaskList";
 import toast from "react-hot-toast";
-import { Trash2, Repeat, ChevronLeft, ChevronRight, Calendar as CalendarIcon, AlertCircle } from "lucide-react";
+import { Trash2, Repeat, ChevronLeft, ChevronRight, Calendar as CalendarIcon, AlertCircle, Eye } from "lucide-react";
 import ConfirmationModal from "@/components/ConfirmationModal";
+import EditTaskModal from "@/components/EditTaskModal";
+import RoutineDetailModal from "@/components/RoutineDetailModal";
+import EditRoutineModal from "@/components/EditRoutineModal";
 
 interface Task {
   _id: string;
@@ -33,6 +36,9 @@ export default function Tasks() {
   const [loading, setLoading] = useState(true);
   const [routineToDelete, setRoutineToDelete] = useState<string | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [routineToView, setRoutineToView] = useState<Routine | null>(null);
+  const [routineToEdit, setRoutineToEdit] = useState<Routine | null>(null);
   const [showClearDayConfirm, setShowClearDayConfirm] = useState(false);
   
   // Calendar State
@@ -208,6 +214,25 @@ export default function Tasks() {
     }
   };
 
+  const handleUpdateTaskDetail = async (taskId: string, updates: Partial<Task>) => {
+    try {
+      const res = await fetch("/api/tasks/update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId, ...updates }),
+      });
+      if (res.ok) {
+        toast.success("Task updated");
+        fetchData();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to update task");
+      }
+    } catch (error) {
+      toast.error("Failed to update task");
+    }
+  };
+
   const handleConfirmDeleteRoutine = async (purgeAll: boolean) => {
     if (!routineToDelete) return;
     try {
@@ -224,6 +249,25 @@ export default function Tasks() {
       }
     } catch (error) {
       toast.error("Failed to delete routine");
+    }
+  };
+
+  const handleUpdateRoutineDetail = async (routineId: string, updates: Partial<Routine>) => {
+    try {
+      const res = await fetch("/api/routines/update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ routineId, ...updates }),
+      });
+      if (res.ok) {
+        toast.success("Routine updated! All tasks synced.");
+        fetchData();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to update routine");
+      }
+    } catch (error) {
+      toast.error("Failed to update routine");
     }
   };
 
@@ -422,11 +466,11 @@ export default function Tasks() {
                       {formData.title.length}/60
                     </span>
                   </div>
-                  <input type="text" required value={formData.title} maxLength={60}
-                    onChange={(e) => setFormData({...formData, title: e.target.value})}
-                    placeholder="e.g. Read Physics Chapter 3"
-                    className="block w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
+                    <input type="text" required value={formData.title} maxLength={60}
+                      onChange={(e) => setFormData({...formData, title: e.target.value})}
+                      placeholder="e.g. Read Physics Chapter 3"
+                      className="block w-full px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
                 </div>
                 <div>
                   <div className="flex justify-between items-center mb-1">
@@ -437,7 +481,7 @@ export default function Tasks() {
                   </div>
                   <textarea value={formData.description} maxLength={150}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    className="block w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                    className="block w-full px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
                     rows={2}
                   />
                 </div>
@@ -447,7 +491,7 @@ export default function Tasks() {
                     <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Target Date</label>
                     <input type="date" required value={formData.date}
                       onChange={(e) => setFormData({...formData, date: e.target.value})}
-                      className="block w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                      className="block w-full px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                     />
                   </div>
                 ) : (
@@ -456,7 +500,7 @@ export default function Tasks() {
                       <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Recurrence</label>
                       <select value={formData.frequency}
                         onChange={(e) => setFormData({...formData, frequency: e.target.value})}
-                        className="block w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                        className="block w-full px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                       >
                         <option value="daily">Daily Routine</option>
                         <option value="weekly">Weekly Routine</option>
@@ -466,19 +510,19 @@ export default function Tasks() {
                     <div className="grid grid-cols-2 gap-2 p-3 bg-gray-50 border border-gray-200 rounded-xl">
                       <div>
                         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Start Date <span className="text-red-500">*</span></label>
-                        <input type="date" required min="2020-01-01" max="2099-12-31"
-                          value={formData.startDate}
-                          onChange={(e) => { const s = e.target.value; setFormData(p => ({...p, startDate: s, endDate: p.endDate < s ? s : p.endDate})); }}
-                          className="block w-full text-sm font-semibold border-none bg-transparent p-0 focus:ring-0"
-                        />
+                          <input type="date" required min="2020-01-01" max="2099-12-31"
+                            value={formData.startDate}
+                            onChange={(e) => { const s = e.target.value; setFormData(p => ({...p, startDate: s, endDate: p.endDate < s ? s : p.endDate})); }}
+                            className="block w-full text-sm font-semibold border-none bg-transparent p-0 text-gray-900 focus:ring-0"
+                          />
                       </div>
                       <div className="border-l pl-3">
                         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">End Date <span className="text-red-500">*</span></label>
-                        <input type="date" required min={formData.startDate} max="2099-12-31"
-                          value={formData.endDate}
-                          onChange={(e) => setFormData(p => ({...p, endDate: e.target.value}))}
-                          className="block w-full text-sm font-semibold border-none bg-transparent p-0 focus:ring-0"
-                        />
+                          <input type="date" required min={formData.startDate} max="2099-12-31"
+                            value={formData.endDate}
+                            onChange={(e) => setFormData(p => ({...p, endDate: e.target.value}))}
+                            className="block w-full text-sm font-semibold border-none bg-transparent p-0 text-gray-900 focus:ring-0"
+                          />
                       </div>
                     </div>
                   </>
@@ -513,7 +557,13 @@ export default function Tasks() {
                   <p className="text-gray-300 text-xs mt-1">Use Quick Add above ↑</p>
                 </div>
               ) : (
-                <TaskList tasks={selectedTasks} onUpdateStatus={handleUpdateStatus} onDelete={(id) => setTaskToDelete(id)} todayStr={todayStr} />
+                <TaskList 
+                  tasks={selectedTasks} 
+                  onUpdateStatus={handleUpdateStatus} 
+                  onDelete={(id) => setTaskToDelete(id)} 
+                  onEdit={(task) => setTaskToEdit(task)}
+                  todayStr={todayStr} 
+                />
               )}
             </div>
           </div>
@@ -540,10 +590,16 @@ export default function Tasks() {
                       {rt.endDate && <span>→ {new Date(new Date(rt.endDate).toISOString().slice(0,10)+"T12:00:00").toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span>}
                     </div>
                   </div>
-                  <button onClick={() => setRoutineToDelete(rt._id)}
-                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-                    title="Delete Routine"
-                  ><Trash2 className="w-4 h-4" /></button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={() => setRoutineToView(rt)}
+                      className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-colors"
+                      title="View Routine"
+                    ><Eye className="w-4 h-4" /></button>
+                    <button onClick={() => setRoutineToDelete(rt._id)}
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete Routine"
+                    ><Trash2 className="w-4 h-4" /></button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -580,6 +636,29 @@ export default function Tasks() {
           </div>
         </div>
       )}
+
+      <EditTaskModal 
+        isOpen={!!taskToEdit}
+        onClose={() => setTaskToEdit(null)}
+        onUpdate={handleUpdateTaskDetail}
+        task={taskToEdit}
+      />
+
+      {/* ── ROUTINE MODALS ── */}
+      <RoutineDetailModal
+        isOpen={!!routineToView}
+        onClose={() => setRoutineToView(null)}
+        onEdit={(rt) => { setRoutineToView(null); setRoutineToEdit(rt); }}
+        onDelete={(id) => { setRoutineToView(null); setRoutineToDelete(id); }}
+        routine={routineToView}
+      />
+
+      <EditRoutineModal
+        isOpen={!!routineToEdit}
+        onClose={() => setRoutineToEdit(null)}
+        onUpdate={handleUpdateRoutineDetail}
+        routine={routineToEdit}
+      />
 
       {/* ── CUSTOM CONFIRMATION MODALS ── */}
       <ConfirmationModal
