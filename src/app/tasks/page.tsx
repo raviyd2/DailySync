@@ -5,7 +5,7 @@ import { useHasMounted } from "@/hooks/useHasMounted";
 import Navbar from "@/components/Navbar";
 import TaskList from "@/components/TaskList";
 import toast from "react-hot-toast";
-import { Trash2, Repeat, ChevronLeft, ChevronRight, Calendar as CalendarIcon, AlertCircle, Eye } from "lucide-react";
+import { Trash2, Repeat, ChevronLeft, ChevronRight, Calendar as CalendarIcon, AlertCircle, Eye, Clock } from "lucide-react";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import EditTaskModal from "@/components/EditTaskModal";
 import RoutineDetailModal from "@/components/RoutineDetailModal";
@@ -16,9 +16,11 @@ interface Task {
   title: string;
   description?: string;
   date: string;
-  status: "pending" | "completed" | "missed";
+  status: "pending" | "completed" | "missed" | "partially-completed";
   createdAt?: string;
   completedAt?: string;
+  targetDuration?: number;
+  actualDuration?: number;
 }
 
 interface Routine {
@@ -28,7 +30,15 @@ interface Routine {
   frequency: "daily" | "weekly" | "monthly";
   startDate?: string;
   endDate?: string;
+  targetDuration?: number;
 }
+
+const formatDuration = (mins: number) => {
+  if (mins < 60) return `${mins}m`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+};
 
 export default function Tasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -70,6 +80,7 @@ export default function Tasks() {
     frequency: "none",
     startDate: selectedDateStr,
     endDate: selectedDateStr, // default same as start — user must pick a real end
+    targetDuration: 60,
   });
 
   const fetchData = async (viewDate?: Date) => {
@@ -121,12 +132,13 @@ export default function Tasks() {
           body: JSON.stringify({
             title: formData.title,
             description: formData.description,
-            date: formData.date
+            date: formData.date,
+            targetDuration: formData.targetDuration
           }),
         });
         if (res.ok) {
           toast.success("Task created");
-          setFormData({ ...formData, title: "", description: "" });
+          setFormData({ ...formData, title: "", description: "", targetDuration: 60 });
           fetchData();
         } else {
           const data = await res.json();
@@ -158,13 +170,14 @@ export default function Tasks() {
             frequency: formData.frequency,
             startDate: formData.startDate,
             endDate: formData.endDate,
+            targetDuration: formData.targetDuration,
           }),
         });
         if (res.ok) {
           toast.success("Routine created! Tasks auto-generated.");
           // Reset everything back to single-task mode cleanly
           setTaskType("single");
-          setFormData({ title: "", description: "", date: selectedDateStr, frequency: "none", startDate: selectedDateStr, endDate: selectedDateStr });
+          setFormData({ title: "", description: "", date: selectedDateStr, frequency: "none", startDate: selectedDateStr, endDate: selectedDateStr, targetDuration: 60 });
           // Seed past month first (if needed), then current — both awaited to prevent race condition
           const startObj = formData.startDate ? new Date(formData.startDate + "T12:00:00") : currentViewDate;
           if (startObj < currentViewDate) {
@@ -182,6 +195,10 @@ export default function Tasks() {
   };
 
   const handleUpdateStatus = async (taskId: string, status: string) => {
+    // OPTIMISTIC UPDATE
+    const oldTasks = [...tasks];
+    setTasks(prev => prev.map(t => t._id === taskId ? { ...t, status: status as Task["status"] } : t));
+
     try {
       const res = await fetch("/api/tasks/update", {
         method: "PUT",
@@ -189,11 +206,14 @@ export default function Tasks() {
         body: JSON.stringify({ taskId, status }),
       });
       if (res.ok) {
-        toast.success("Task updated");
-        fetchData();
+        toast.success(status === "completed" ? "Great job!" : "Status updated");
+      } else {
+        setTasks(oldTasks);
+        toast.error("Failed to update status");
       }
     } catch (error) {
-      toast.error("Failed to update task");
+      setTasks(oldTasks);
+      toast.error("An error occurred");
     }
   };
 
@@ -215,6 +235,10 @@ export default function Tasks() {
   };
 
   const handleUpdateTaskDetail = async (taskId: string, updates: Partial<Task>) => {
+    // OPTIMISTIC UPDATE
+    const oldTasks = [...tasks];
+    setTasks(prev => prev.map(t => t._id === taskId ? { ...t, ...updates } : t));
+
     try {
       const res = await fetch("/api/tasks/update", {
         method: "PUT",
@@ -223,13 +247,41 @@ export default function Tasks() {
       });
       if (res.ok) {
         toast.success("Task updated");
-        fetchData();
       } else {
         const data = await res.json();
+        setTasks(oldTasks); // REVERT
         toast.error(data.error || "Failed to update task");
       }
     } catch (error) {
+      setTasks(oldTasks); // REVERT
       toast.error("Failed to update task");
+    }
+  };
+
+  const handleLogProgress = async (taskId: string, minutes: number) => {
+    // OPTIMISTIC UPDATE
+    const oldTasks = [...tasks];
+    setTasks(prev => prev.map(t => {
+      if (t._id === taskId) {
+        const newActual = (t.actualDuration || 0) + minutes;
+        return { ...t, actualDuration: newActual };
+      }
+      return t;
+    }));
+
+    try {
+      const res = await fetch("/api/tasks/update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId, durationIncrement: minutes }),
+      });
+      if (!res.ok) {
+        setTasks(oldTasks);
+        toast.error("Failed to log progress");
+      }
+    } catch (error) {
+      setTasks(oldTasks);
+      toast.error("An error occurred");
     }
   };
 
@@ -451,7 +503,7 @@ export default function Tasks() {
                   >Specific Date</button>
                   <button
                     type="button"
-                    onClick={() => { setTaskType("routine"); setFormData({...formData, frequency: "daily", startDate: selectedDateStr, endDate: selectedDateStr}); }}
+                    onClick={() => { setTaskType("routine"); setFormData(prev => ({...prev, frequency: "daily", startDate: selectedDateStr, endDate: selectedDateStr, targetDuration: prev.targetDuration || 60})); }}
                     className={`flex-1 py-1.5 text-xs font-bold rounded-[10px] transition-all ${taskType === "routine" ? 'bg-white text-indigo-700 shadow' : 'text-white/70 hover:text-white'}`}
                   >Date Range</button>
                 </div>
@@ -487,12 +539,22 @@ export default function Tasks() {
                 </div>
 
                 {taskType === "single" ? (
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Target Date</label>
-                    <input type="date" required value={formData.date}
-                      onChange={(e) => setFormData({...formData, date: e.target.value})}
-                      className="block w-full px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                    />
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Target Date</label>
+                      <input type="date" required value={formData.date}
+                        onChange={(e) => setFormData({...formData, date: e.target.value})}
+                        className="block w-full px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                      />
+                    </div>
+                    <div className="w-[100px]">
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Study Goal (mins)</label>
+                      <input type="number" min="0" value={formData.targetDuration === 0 ? "" : formData.targetDuration}
+                        onChange={(e) => setFormData({...formData, targetDuration: parseInt(e.target.value) || 0})}
+                        placeholder="e.g. 60"
+                        className="block w-full px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <>
@@ -524,6 +586,14 @@ export default function Tasks() {
                             className="block w-full text-sm font-semibold border-none bg-transparent p-0 text-gray-900 focus:ring-0"
                           />
                       </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Study Goal (minutes)</label>
+                      <input type="number" min="1" value={formData.targetDuration === 0 ? "" : formData.targetDuration}
+                        onChange={(e) => setFormData({...formData, targetDuration: parseInt(e.target.value) || 0})}
+                        placeholder="e.g. 60"
+                        className="block w-full px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                      />
                     </div>
                   </>
                 )}
@@ -562,6 +632,7 @@ export default function Tasks() {
                   onUpdateStatus={handleUpdateStatus} 
                   onDelete={(id) => setTaskToDelete(id)} 
                   onEdit={(task) => setTaskToEdit(task)}
+                  onLogProgress={handleLogProgress}
                   todayStr={todayStr} 
                 />
               )}
@@ -584,10 +655,41 @@ export default function Tasks() {
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-900 truncate">{rt.title}</p>
-                    <p className="text-xs text-indigo-500 font-medium capitalize mt-0.5">{rt.frequency}</p>
+                    <p className="text-xs text-indigo-500 font-medium capitalize mt-0.5 flex items-center gap-1.5">
+                      {rt.frequency}
+                      {rt.targetDuration > 0 && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[9px] font-bold">
+                          <Clock className="w-2.5 h-2.5" /> {formatDuration(rt.targetDuration)}
+                        </span>
+                      )}
+                    </p>
                     <div className="flex gap-2 mt-1 text-[10px] text-gray-400 flex-wrap">
-                      {rt.startDate && <span>From {new Date(new Date(rt.startDate).toISOString().slice(0,10)+"T12:00:00").toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span>}
-                      {rt.endDate && <span>→ {new Date(new Date(rt.endDate).toISOString().slice(0,10)+"T12:00:00").toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span>}
+                      {rt.startDate && (
+                        <span>
+                          From {(() => {
+                            try {
+                              const d = new Date(rt.startDate);
+                              const iso = d.toISOString().slice(0, 10);
+                              return new Date(iso + "T12:00:00").toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+                            } catch (e) {
+                              return "N/A";
+                            }
+                          })()}
+                        </span>
+                      )}
+                      {rt.endDate && (
+                        <span>
+                          → {(() => {
+                            try {
+                              const d = new Date(rt.endDate);
+                              const iso = d.toISOString().slice(0, 10);
+                              return new Date(iso + "T12:00:00").toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+                            } catch (e) {
+                              return "Indefinite";
+                            }
+                          })()}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">

@@ -12,7 +12,7 @@ export async function POST(request) {
 
     await connectDB();
     const body = await request.json();
-    const { title, description, date } = body;
+    const { title, description, date, targetDuration } = body;
 
     if (!title || !date) {
       return NextResponse.json(
@@ -30,6 +30,7 @@ export async function POST(request) {
       title,
       description: description || "",
       date: storeDate,
+      targetDuration: Number(targetDuration) || 0,
     });
 
     return NextResponse.json(

@@ -13,7 +13,7 @@ export async function PUT(request) {
 
     await connectDB();
     const body = await request.json();
-    const { routineId, title, description } = body;
+    const { routineId, title, description, targetDuration } = body;
 
     if (!routineId) {
       return NextResponse.json(
@@ -25,6 +25,7 @@ export async function PUT(request) {
     const updateData = {};
     if (title) updateData.title = title;
     if (description !== undefined) updateData.description = description;
+    if (targetDuration !== undefined) updateData.targetDuration = Number(targetDuration);
 
     const routine = await Routine.findOneAndUpdate(
       { _id: routineId, userId },
@@ -39,12 +40,13 @@ export async function PUT(request) {
       );
     }
 
-    // Cascade update: Change title/description for all tasks associated with this routine
+    // Cascade update: Change title/description/duration for all tasks associated with this routine
     // Usually we update all tasks to keep everything in sync
-    if (title || description !== undefined) {
+    if (title || description !== undefined || targetDuration !== undefined) {
       const taskUpdateData = {};
       if (title) taskUpdateData.title = title;
       if (description !== undefined) taskUpdateData.description = description;
+      if (targetDuration !== undefined) taskUpdateData.targetDuration = Number(targetDuration);
 
       await Task.updateMany(
         { routineId, userId },

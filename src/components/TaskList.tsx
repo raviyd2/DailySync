@@ -6,9 +6,11 @@ interface Task {
   title: string;
   description?: string;
   date: string;
-  status: "pending" | "completed" | "missed";
+  status: "pending" | "completed" | "missed" | "partially-completed";
   createdAt?: string;
   completedAt?: string;
+  targetDuration?: number;
+  actualDuration?: number;
 }
 
 interface TaskListProps {
@@ -16,10 +18,11 @@ interface TaskListProps {
   onUpdateStatus: (taskId: string, status: string) => void;
   onDelete: (taskId: string) => void;
   onEdit?: (task: Task) => void;
+  onLogProgress?: (taskId: string, minutes: number) => void;
   todayStr: string;
 }
 
-export default function TaskList({ tasks, onUpdateStatus, onDelete, onEdit, todayStr }: TaskListProps) {
+export default function TaskList({ tasks, onUpdateStatus, onDelete, onEdit, onLogProgress, todayStr }: TaskListProps) {
   if (!tasks || tasks.length === 0) {
     return (
       <div className="text-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
@@ -46,6 +49,7 @@ export default function TaskList({ tasks, onUpdateStatus, onDelete, onEdit, toda
             onUpdateStatus={onUpdateStatus}
             onDelete={onDelete}
             onEdit={onEdit}
+            onLogProgress={onLogProgress}
             isPast={taskDateStr < todayStr}
             isFuture={taskDateStr > todayStr}
           />

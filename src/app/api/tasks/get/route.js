@@ -179,6 +179,7 @@ export async function GET(request) {
               title: routine.title,
               description: routine.description || "",
               date: storeDate,
+              targetDuration: routine.targetDuration || 0,
             });
           }
         }

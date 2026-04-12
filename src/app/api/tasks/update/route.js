@@ -12,7 +12,7 @@ export async function PUT(request) {
 
     await connectDB();
     const body = await request.json();
-    const { taskId, status, title, description, date } = body;
+    const { taskId, status, title, description, date, targetDuration, actualDuration, durationIncrement } = body;
 
     if (!taskId) {
       return NextResponse.json(
@@ -21,7 +21,7 @@ export async function PUT(request) {
       );
     }
 
-    if (status && !["pending", "completed", "missed"].includes(status)) {
+    if (status && !["pending", "completed", "missed", "partially-completed"].includes(status)) {
       return NextResponse.json(
         { error: "Invalid status value" },
         { status: 400 }
@@ -31,15 +31,24 @@ export async function PUT(request) {
     const updateData = {};
     if (status) {
       updateData.status = status;
-      updateData.completedAt = status === "completed" ? new Date() : null;
+      updateData.completedAt = ["completed", "partially-completed"].includes(status) ? new Date() : null;
+      // If marking as completed, set actualDuration to targetDuration if it was 0? 
+      // No, let users log it manually, but maybe auto-fill if they just check it.
     }
     if (title) updateData.title = title;
     if (description !== undefined) updateData.description = description;
     if (date) updateData.date = date;
+    if (targetDuration !== undefined) updateData.targetDuration = Number(targetDuration);
+    if (actualDuration !== undefined) updateData.actualDuration = Number(actualDuration);
+
+    const mongoUpdate = { $set: updateData };
+    if (durationIncrement) {
+      mongoUpdate.$inc = { actualDuration: Number(durationIncrement) };
+    }
 
     const task = await Task.findOneAndUpdate(
       { _id: taskId, userId },
-      { $set: updateData },
+      mongoUpdate,
       { new: true }
     );
 

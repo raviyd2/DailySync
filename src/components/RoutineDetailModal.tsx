@@ -10,6 +10,7 @@ interface Routine {
   frequency: "daily" | "weekly" | "monthly";
   startDate?: string;
   endDate?: string;
+  targetDuration?: number;
 }
 
 interface RoutineDetailModalProps {
@@ -20,16 +21,31 @@ interface RoutineDetailModalProps {
   routine: Routine | null;
 }
 
+const formatDuration = (mins: number) => {
+  if (mins < 60) return `${mins}m`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+};
+
 export default function RoutineDetailModal({ isOpen, onClose, onEdit, onDelete, routine }: RoutineDetailModalProps) {
   if (!isOpen || !routine) return null;
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return "N/A";
-    return new Date(dateStr + "T12:00:00").toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
+  const formatDate = (dateValue?: any) => {
+    if (!dateValue) return "N/A";
+    try {
+      const d = new Date(dateValue);
+      if (isNaN(d.getTime())) return "N/A";
+      // Ensure we extract the pure YYYY-MM-DD to avoid time/timezone shifts
+      const iso = d.toISOString().slice(0, 10);
+      return new Date(iso + "T12:00:00").toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    } catch (e) {
+      return "N/A";
+    }
   };
 
   return (
@@ -89,6 +105,22 @@ export default function RoutineDetailModal({ isOpen, onClose, onEdit, onDelete, 
                 <p className="text-xs font-bold text-gray-800">{routine.endDate ? formatDate(routine.endDate) : "Indefinite"}</p>
             </div>
           </div>
+          
+          {/* Study Goal Section */}
+          {(routine as any).targetDuration > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-indigo-400">
+                <Clock className="w-4 h-4" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Study Goal</span>
+              </div>
+              <div className="bg-indigo-50/50 rounded-2xl p-4 border border-indigo-100/50 flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">Planned session duration</span>
+                <span className="text-sm font-bold text-indigo-600 bg-white px-3 py-1 rounded-xl shadow-sm">
+                  {formatDuration((routine as any).targetDuration)}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer Actions */}

@@ -28,12 +28,20 @@ const TaskSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "completed", "missed"],
+      enum: ["pending", "completed", "missed", "partially-completed"],
       default: "pending",
     },
     completedAt: {
       type: Date,
       default: null,
+    },
+    targetDuration: {
+      type: Number, // in minutes
+      default: 0,
+    },
+    actualDuration: {
+      type: Number, // in minutes
+      default: 0,
     },
   },
   {

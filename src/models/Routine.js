@@ -37,11 +37,20 @@ const RoutineSchema = new mongoose.Schema(
     lastGenerated: {
       type: Date,
       default: null,
-    }
+    },
+    targetDuration: {
+      type: Number, // in minutes
+      default: 0,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-export default mongoose.models.Routine || mongoose.model("Routine", RoutineSchema);
+// In Next.js dev mode, the model might be cached. Delete it to ensure schema updates take effect.
+if (mongoose.models.Routine) {
+  delete mongoose.models.Routine;
+}
+
+export default mongoose.model("Routine", RoutineSchema);

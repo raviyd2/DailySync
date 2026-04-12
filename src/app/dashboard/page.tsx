@@ -5,7 +5,7 @@ import { useHasMounted } from "@/hooks/useHasMounted";
 import Navbar from "@/components/Navbar";
 import StatsCard from "@/components/StatsCard";
 import TaskList from "@/components/TaskList";
-import { ListTodo, CheckCircle2, XCircle } from "lucide-react";
+import { ListTodo, CheckCircle2, XCircle, Clock } from "lucide-react";
 import toast from "react-hot-toast";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import EditTaskModal from "@/components/EditTaskModal";
@@ -15,9 +15,11 @@ interface Task {
   title: string;
   description?: string;
   date: string;
-  status: "pending" | "completed" | "missed";
+  status: "pending" | "completed" | "missed" | "partially-completed";
   createdAt?: string;
   completedAt?: string;
+  targetDuration?: number;
+  actualDuration?: number;
 }
 
 export default function Dashboard() {
@@ -46,6 +48,10 @@ export default function Dashboard() {
   }, []);
 
   const handleUpdateStatus = async (taskId: string, status: string) => {
+    // OPTIMISTIC UPDATE
+    const oldTasks = [...tasks];
+    setTasks(prev => prev.map(t => t._id === taskId ? { ...t, status: status as Task["status"] } : t));
+
     try {
       const res = await fetch("/api/tasks/update", {
         method: "PUT",
@@ -53,11 +59,14 @@ export default function Dashboard() {
         body: JSON.stringify({ taskId, status }),
       });
       if (res.ok) {
-        toast.success("Task updated");
-        fetchTasks();
+        toast.success(status === "completed" ? "Great job!" : "Status updated");
+      } else {
+        setTasks(oldTasks);
+        toast.error("Failed to update status");
       }
     } catch (error) {
-      toast.error("Failed to update task");
+      setTasks(oldTasks);
+      toast.error("An error occurred");
     }
   };
 
@@ -79,6 +88,10 @@ export default function Dashboard() {
   };
 
   const handleUpdateTaskDetail = async (taskId: string, updates: Partial<Task>) => {
+    // OPTIMISTIC UPDATE
+    const oldTasks = [...tasks];
+    setTasks(prev => prev.map(t => t._id === taskId ? { ...t, ...updates } : t));
+
     try {
       const res = await fetch("/api/tasks/update", {
         method: "PUT",
@@ -87,13 +100,41 @@ export default function Dashboard() {
       });
       if (res.ok) {
         toast.success("Task updated");
-        fetchTasks();
       } else {
         const data = await res.json();
+        setTasks(oldTasks); // REVERT
         toast.error(data.error || "Failed to update task");
       }
     } catch (error) {
+      setTasks(oldTasks); // REVERT
       toast.error("Failed to update task");
+    }
+  };
+
+  const handleLogProgress = async (taskId: string, minutes: number) => {
+    // OPTIMISTIC UPDATE
+    const oldTasks = [...tasks];
+    setTasks(prev => prev.map(t => {
+      if (t._id === taskId) {
+        const newActual = (t.actualDuration || 0) + minutes;
+        return { ...t, actualDuration: newActual };
+      }
+      return t;
+    }));
+
+    try {
+      const res = await fetch("/api/tasks/update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId, durationIncrement: minutes }),
+      });
+      if (!res.ok) {
+        setTasks(oldTasks);
+        toast.error("Failed to log progress");
+      }
+    } catch (error) {
+      setTasks(oldTasks);
+      toast.error("An error occurred");
     }
   };
 
@@ -120,6 +161,14 @@ export default function Dashboard() {
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t) => t.status === "completed").length;
   const missedTasks = tasks.filter((t) => t.status === "missed").length;
+  const totalMinutes = tasks.reduce((sum, t) => sum + (t.actualDuration || 0), 0);
+
+  const formatDuration = (mins: number) => {
+    if (mins < 60) return `${mins}m`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  };
 
   if (!hasMounted) return null;
 
@@ -134,19 +183,24 @@ export default function Dashboard() {
             <div className="text-center py-10">Loading...</div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-5 sm:mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 sm:gap-4 mb-5 sm:mb-8">
+                <StatsCard 
+                  title="Study Time" 
+                  value={formatDuration(totalMinutes)} 
+                  icon={<Clock className="h-6 w-6 text-indigo-600" />} 
+                />
                 <StatsCard 
                   title="Total Tasks" 
                   value={totalTasks} 
                   icon={<ListTodo className="h-6 w-6 text-indigo-600" />} 
                 />
                 <StatsCard 
-                  title="Completed Tasks" 
+                  title="Done" 
                   value={completedTasks} 
                   icon={<CheckCircle2 className="h-6 w-6 text-green-600" />} 
                 />
                 <StatsCard 
-                  title="Missed Tasks" 
+                  title="Missed" 
                   value={missedTasks} 
                   icon={<XCircle className="h-6 w-6 text-red-600" />} 
                 />
@@ -173,6 +227,7 @@ export default function Dashboard() {
                   onUpdateStatus={handleUpdateStatus} 
                   onDelete={(id) => setTaskToDelete(id)} 
                   onEdit={(task) => setTaskToEdit(task)}
+                  onLogProgress={handleLogProgress}
                   todayStr={todayStr_dash}
                 />
               </div>

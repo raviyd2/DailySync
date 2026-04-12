@@ -8,6 +8,7 @@ interface Routine {
   title: string;
   description?: string;
   frequency: "daily" | "weekly" | "monthly";
+  targetDuration?: number;
 }
 
 interface EditRoutineModalProps {
@@ -20,7 +21,8 @@ interface EditRoutineModalProps {
 export default function EditRoutineModal({ isOpen, onClose, onUpdate, routine }: EditRoutineModalProps) {
   const [formData, setFormData] = useState({
     title: "",
-    description: ""
+    description: "",
+    targetDuration: 0
   });
   const [loading, setLoading] = useState(false);
 
@@ -28,7 +30,8 @@ export default function EditRoutineModal({ isOpen, onClose, onUpdate, routine }:
     if (routine) {
       setFormData({
         title: routine.title,
-        description: routine.description || ""
+        description: routine.description || "",
+        targetDuration: routine.targetDuration || 0
       });
     }
   }, [routine]);
@@ -71,7 +74,7 @@ export default function EditRoutineModal({ isOpen, onClose, onUpdate, routine }:
           </button>
         </div>
 
-        <div className="p-6 space-y-5 flex-1 overflow-y-auto">
+        <div className="p-6 space-y-5 flex-1 overflow-y-auto max-h-[70vh] custom-scrollbar">
           <div className="space-y-1.5">
             <label className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">
               <Type className="w-3.5 h-3.5" /> Routine Title
@@ -105,6 +108,19 @@ export default function EditRoutineModal({ isOpen, onClose, onUpdate, routine }:
                 {formData.description.length}/150
               </span>
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">
+              <Save className="w-3.5 h-3.5" /> Study Goal (minutes)
+            </label>
+            <input 
+              type="number" 
+              min="0"
+              value={formData.targetDuration || ""}
+              onChange={(e) => setFormData({...formData, targetDuration: parseInt(e.target.value) || 0})}
+              placeholder="e.g. 120"
+              className="block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-sm"
+            />
           </div>
 
           <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">

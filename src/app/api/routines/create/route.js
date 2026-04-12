@@ -13,7 +13,7 @@ export async function POST(request) {
 
     await connectDB();
     const body = await request.json();
-    const { title, description, frequency, startDate, endDate } = body;
+    const { title, description, frequency, startDate, endDate, targetDuration } = body;
 
     if (!title || !frequency) {
       return NextResponse.json(
@@ -49,6 +49,7 @@ export async function POST(request) {
       frequency,
       startDate: startDate ? parseDateStr(startDate) : defaultStart,
       endDate:   endDate   ? parseDateStr(endDate)   : null,
+      targetDuration: Number(targetDuration) || 60,
     });
 
     return NextResponse.json(

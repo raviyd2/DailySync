@@ -1,14 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Calendar, Type, AlignLeft, Save } from "lucide-react";
+import { X, Calendar, Type, AlignLeft, Save, Clock } from "lucide-react";
 
 interface Task {
   _id: string;
   title: string;
   description?: string;
   date: string;
-  status: "pending" | "completed" | "missed";
+  status: "pending" | "completed" | "missed" | "partially-completed";
+  targetDuration?: number;
+  actualDuration?: number;
 }
 
 interface EditTaskModalProps {
@@ -22,7 +24,9 @@ export default function EditTaskModal({ isOpen, onClose, onUpdate, task }: EditT
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    date: ""
+    date: "",
+    targetDuration: 0,
+    actualDuration: 0
   });
   const [loading, setLoading] = useState(false);
 
@@ -38,7 +42,9 @@ export default function EditTaskModal({ isOpen, onClose, onUpdate, task }: EditT
       setFormData({
         title: task.title,
         description: task.description || "",
-        date: formattedDate
+        date: formattedDate,
+        targetDuration: task.targetDuration || 0,
+        actualDuration: task.actualDuration || 0
       });
     }
   }, [task]);
@@ -86,7 +92,7 @@ export default function EditTaskModal({ isOpen, onClose, onUpdate, task }: EditT
         </div>
 
         {/* Form Body */}
-        <div className="p-6 space-y-5 flex-1 overflow-y-auto">
+        <div className="p-6 space-y-5 flex-1 overflow-y-auto max-h-[70vh] custom-scrollbar">
           {/* Title Field */}
           <div className="space-y-1.5">
             <label className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">
@@ -129,12 +135,40 @@ export default function EditTaskModal({ isOpen, onClose, onUpdate, task }: EditT
             <label className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">
               <Calendar className="w-3.5 h-3.5" /> Target Date
             </label>
-            <div className="relative">
+            <input 
+              type="date" 
+              required 
+              value={formData.date}
+              onChange={(e) => setFormData({...formData, date: e.target.value})}
+              className="block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-sm"
+            />
+          </div>
+
+          {/* Duration Fields */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">
+                <Clock className="w-3.5 h-3.5" /> Planned (m)
+              </label>
               <input 
-                type="date" 
-                required 
-                value={formData.date}
-                onChange={(e) => setFormData({...formData, date: e.target.value})}
+                type="number" 
+                min="0"
+                value={formData.targetDuration || ""}
+                onChange={(e) => setFormData({...formData, targetDuration: parseInt(e.target.value) || 0})}
+                placeholder="Mins"
+                className="block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-sm"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">
+                <Clock className="w-3.5 h-3.5" /> Spent (m)
+              </label>
+              <input 
+                type="number" 
+                min="0"
+                value={formData.actualDuration || ""}
+                onChange={(e) => setFormData({...formData, actualDuration: parseInt(e.target.value) || 0})}
+                placeholder="Mins"
                 className="block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-sm"
               />
             </div>
